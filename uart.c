@@ -1,68 +1,35 @@
 #include "solar.h"
 
-unsigned char buffer[10], uart_index;
-
 void setupUART0()
 {
-	memset(buffer, 0, 10); //clear buffer
-	uart_index = 0; //init variables
+	SCON0 = 0x10; //8 bit mode, variable baud rate, STOP bit logic level ignored, RX enabled, clear UART interrupts
 
-	//enable global interrupts, in case not already done
-	EA = 1;
+	if (SYSCLK/BAUDRATE/2/256 < 1) {
+		TH1 = -(SYSCLK/BAUDRATE/2);
 
-	//enable uart0 interrupts
-	ES0 = 1;
+		CKCON &= ~0x0B;
+		CKCON |=  0x08;
+	} else if (SYSCLK/BAUDRATE/2/256 < 4) {
+		TH1 = -(SYSCLK/BAUDRATE/2/4);
 
-	//clock source = timer1 (mode 2) - 9600 baud (9615)
-	CKCON |= 1;
+		CKCON &= ~0x0B;               
+		CKCON |=  0x01;
+	} else if (SYSCLK/BAUDRATE/2/256 < 12) {
+		TH1 = -(SYSCLK/BAUDRATE/2/12);
 
-	TL1 = 0x64;
-	TH1 = 0x64; //100
+		CKCON &= ~0x0B;
+	} else {
+		TH1 = -(SYSCLK/BAUDRATE/2/48);
 
-	//setup timer 1
-	TMOD = (1 << 5);
-
-	//start timer 1
-	TR1 = 1;
-
-	//SCON0 defaults (could set MCE0 to 1)
-
-	//SBUF0 - write byte to send data
-
-	//start receiving now
-	SCON0 |= (1 << 4);
-}
-
-void print(unsigned char *message)
-{
-	int i;
-
-	for(i = 0; i < strlen(message); i++)
-	{
-		SBUF0 = message[i];
+		CKCON &= ~0x0B;
+		CKCON |=  0x02;
 	}
-}
 
-void read(unsigned char *message)
-{
-	strcpy(message, buffer);
-}
+	TL1 = TH1; //init timer1
 
-//must clear interrupt flag inside interrupt based off receive or transmit
-//ISR goes here
-void uart0() interrupt 4
-{
-	if(RI0 == 1)
-	{
-		//read SBUF0 data here and store it or something like that
-		buffer[uart_index] = SBUF0;
-		uart_index++;
-		if(uart_index == 10) { uart_index = 0; } //reset to beginning = circular buffer
-		RI0 = 0;
-	}
-	else if(TI0 == 1)
-	{
-		//nothing yet
-		TI0 = 0;
-	}
+	TMOD &= ~0xf0; //timer 1 = 8 bit auto reload mode
+	TMOD |=  0x20;
+	                
+	TR1 = 1; //start timer1
+	TI0 = 1; //TX0 ready
 }

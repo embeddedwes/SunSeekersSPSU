@@ -49,9 +49,7 @@ void rotateDegrees(unsigned char direction, unsigned int degrees)
 	for(i = 0; i < steps; i++)
 	{
 		step(direction);
-
-		//max speed occurs with 7 millisecond delay
-		delay_ms(10);
+		delay_ms(1);
 	}
 }
 

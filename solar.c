@@ -1,29 +1,31 @@
-#include "solar.h" //include all other header files in here
+#include "solar.h"
 
 //all documentation references found below can be seen at
 //http://www.silabs.com/Support%20Documents/TechnicalDocs/c8051f34x.pdf
 
 int main()
 {
-	//don't remove for now, this disable WDT (watchdog timer) and prevents microcontroller from continually restarting
+	int value;
+	unsigned char message[20];
+
 	disableWatchdog();
+	setupClock();
+	enableInterrupts();
 
-	setup_delay();
-
-	setupUART0();
-	
-	//setup open-drain vs push-pull and setup input/output and a few other things too
+	setupDelay();
 	setupGPIO();
+	setupUART0();
+	setupAnalog();
 
-	/*loop code here to run over and over again*/
 	while(1) {
-		//rotateDegrees(CW, 180); //rotate half a revolution CW
-		//rotateRevolutions(CCW, 2); //rotate 2 revolutions CCW
-		print("test\n");
-		delay_sec(100);
+		rotateDegrees(CW, 180); //rotate half a revolution CW
+		rotateRevolutions(CCW, 1); //rotate 2 revolutions CCW
+		printf("once around the loop\n");
+		value = analogSample(29, 5, 10);
+		sprintf(message, "value: %u\n", value);
+		printf(message);
+		delay_sec(1);
 	}
 	
-	//last line of code the micro controller can run, should never get here since once this code runs the micro controller wont do anything useful again until it is restarted
-	//should stay in the while loop forever
 	return 0;
 }
